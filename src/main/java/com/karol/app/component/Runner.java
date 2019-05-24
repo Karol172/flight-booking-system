@@ -6,6 +6,7 @@ import com.karol.app.repository.BookingRepository;
 import com.karol.app.repository.FlightRepository;
 import com.karol.app.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -21,12 +22,16 @@ public class Runner implements CommandLineRunner {
 
     private BookingRepository bookingRepository;
 
+    private PasswordEncoder passwordEncoder;
+
     public Runner (UserRepository userRepository, AirportRepository airportRepository,
-                   FlightRepository flightRepository, BookingRepository bookingRepository) {
+                   FlightRepository flightRepository, BookingRepository bookingRepository,
+                   PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.airportRepository = airportRepository;
         this.flightRepository = flightRepository;
-        this. bookingRepository = bookingRepository;
+        this.bookingRepository = bookingRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -39,8 +44,8 @@ public class Runner implements CommandLineRunner {
     }
 
     private void createUsers () {
-        userRepository.save(new User("Joe", "Doe", Role.ADMIN, "joe.doe@app.com", "joespassword"));
-        userRepository.save(new User("Mary", "Kowalski", Role.USER, "marry.kowalski@app.com", "marryspassword"));
+        userRepository.save(new User("Joe", "Doe", Role.ADMIN, "joe.doe@app.com", passwordEncoder.encode("joespassword")));
+        userRepository.save(new User("Mary", "Kowalski", Role.USER, "marry.kowalski@app.com", passwordEncoder.encode("marryspassword")));
     }
 
     private void createAirports () {
@@ -49,10 +54,10 @@ public class Runner implements CommandLineRunner {
     }
 
     private void createFlights () {
-        flightRepository.save(new Flight(LocalDateTime.now(), "Dreamliner 747", 370, airportRepository.findByCity("Warsaw")));
+        flightRepository.save(new Flight(LocalDateTime.now(), "Dreamliner 747", 370, airportRepository.findByCity("Los Angeles").get(), airportRepository.findByCity("Warsaw").get()));
     }
 
     private void createBooking () {
-        bookingRepository.save(new Booking(null, LocalDateTime.now(), 3, userRepository.findFirstByLastName("Doe"), flightRepository.getOne(1L)));
+        bookingRepository.save(new Booking(null, LocalDateTime.now(), 3, userRepository.findFirstByLastName("Doe").get(), flightRepository.getOne(1L)));
     }
 }

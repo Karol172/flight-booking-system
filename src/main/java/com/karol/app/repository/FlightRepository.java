@@ -8,5 +8,9 @@ import java.util.Collection;
 
 @Repository
 public interface FlightRepository extends JpaRepository<Flight, Long> {
+
     Collection<Flight> findByDestinationAirportId(long id);
+
+    Collection<Flight> findByStartingAirportId(long id);
+
 }

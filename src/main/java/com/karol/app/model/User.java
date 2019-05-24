@@ -1,6 +1,5 @@
 package com.karol.app.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,7 +28,7 @@ public class User implements Serializable {
     private Role role;
 
     @Column(nullable = false, unique = true, updatable = false)
-    private String mail;
+    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -37,11 +36,11 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "passenger", orphanRemoval = true)
     private Collection<Booking> bookings;
 
-    public User(String firstName, String lastName, Role role, String mail, String password) {
+    public User(String firstName, String lastName, Role role, String email, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
-        this.mail = mail;
+        this.email = email;
         this.password = password;
     }
 }

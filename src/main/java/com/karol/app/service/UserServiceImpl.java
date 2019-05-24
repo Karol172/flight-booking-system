@@ -1,7 +1,9 @@
 package com.karol.app.service;
 
+import com.karol.app.model.Role;
 import com.karol.app.model.User;
 import com.karol.app.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -12,8 +14,11 @@ public class UserServiceImpl implements UserService {
 
     private UserRepository userRepository;
 
-    public UserServiceImpl (UserRepository userRepository) {
+    private PasswordEncoder passwordEncoder;
+
+    public UserServiceImpl (UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -23,26 +28,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(long id) {
-        return userRepository.findById(id).get();
+        Optional<User> user = userRepository.findById(id);
+        return user.isPresent() ? user.get() : null;
     }
 
     @Override
-    public long createUser(User user) {
-        return userRepository.existsByMail(user.getMail()) ? userRepository.save(user).getId() : null;
+    public User createUser(User user) {
+        user.setRole(Role.USER);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return !userRepository.existsByEmail(user.getEmail()) ? userRepository.save(user) : null;
     }
 
     @Override
-    public boolean editUserById(Long id, User user) {
+    public User editUserById(long id, User user, String principalName) {
         Optional<User> userFromDb = userRepository.findById(id);
         if (userFromDb.isPresent()) {
             userFromDb.get().setFirstName(user.getFirstName());
             userFromDb.get().setLastName(user.getLastName());
-            userFromDb.get().setRole(user.getRole()); //TODO: To check later
-            userRepository.save(userFromDb.get());
-            return true;
+            if (principalName.equals(userFromDb.get().getEmail()))
+                userFromDb.get().setPassword(passwordEncoder.encode(user.getPassword()));
+            else if (user.getRole() != null)
+                userFromDb.get().setRole(user.getRole());
+            return userRepository.save(userFromDb.get());
         }
-        return false;
+        return null;
     }
+
 
     @Override
     public boolean removeUserById(long id){
@@ -54,4 +65,15 @@ public class UserServiceImpl implements UserService {
         return false;
     }
 
+    @Override
+    public boolean hasAccess(String username, long itemId) {
+        Optional<User> user = userRepository.findByEmail(username);
+        return user.isPresent() && (user.get().getId() == itemId || user.get().getRole() == Role.ADMIN) ? true : false;
+    }
+
+    @Override
+    public boolean isAdmin (long id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.isPresent() && user.get().getRole() == Role.ADMIN;
+    }
 }

@@ -1,9 +1,15 @@
 package com.karol.app.service;
 
 import com.karol.app.model.Booking;
+import com.karol.app.model.Flight;
+import com.karol.app.model.Role;
+import com.karol.app.model.User;
 import com.karol.app.repository.BookingRepository;
+import com.karol.app.repository.FlightRepository;
+import com.karol.app.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -12,8 +18,15 @@ public class BookingServiceImpl implements BookingService {
 
     private BookingRepository bookingRepository;
 
-    public BookingServiceImpl (BookingRepository bookingRepository) {
+    private UserRepository userRepository;
+
+    private FlightRepository flightRepository;
+
+    public BookingServiceImpl (BookingRepository bookingRepository, UserRepository userRepository,
+                               FlightRepository flightRepository) {
         this.bookingRepository = bookingRepository;
+        this.flightRepository = flightRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -22,28 +35,56 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public Optional<Booking> getBookingById(long id) {
-        return bookingRepository.findById(id);
+    public Booking getBookingById(long id) {
+        Optional<Booking> booking = bookingRepository.findById(id);
+        return booking.isPresent() ? booking.get() : null;
     }
 
-    // TODO: Max number of booked seats
+
     @Override
-    public Optional<Booking> createBooking(Booking booking) {
-        return Optional.of(bookingRepository.save(booking));
+    public Booking createBooking (Booking booking, String username) {
+        Optional<User> passenger = userRepository.findByEmail(username);
+        Optional<Flight> flight = flightRepository.findById(booking.getFlight().getId());
+
+        if (!passenger.isPresent() || !flight.isPresent())
+            return null;
+
+        booking.setPassenger(passenger.get());
+        booking.setFlight(flight.get());
+        booking.setBookingDate(LocalDateTime.now());
+
+        int numberOfBookedSeats = 0;
+        Collection<Booking> bookings = flight.get().getBookedSeats();
+        if (bookings.size() > 0)
+            for (Booking b : bookings)
+                numberOfBookedSeats += b.getBookedSeatsNumber();
+
+        if (numberOfBookedSeats + booking.getBookedSeatsNumber() > flight.get().getMaxPassengersNumber())
+            return null;
+
+        return bookingRepository.save(booking);
     }
 
     @Override
-    public boolean editBookingById(Long id, Booking booking) {
+    public Booking editBookingById(long id, Booking booking) {
         Optional<Booking> bookingFromDb = bookingRepository.findById(id);
         if (bookingFromDb.isPresent()) {
-            bookingFromDb.get().setBookedSeatsNumber(booking.getBookedSeatsNumber());
-            bookingFromDb.get().setBookingDate(booking.getBookingDate());
-            bookingFromDb.get().setFlight(booking.getFlight());
-            bookingFromDb.get().setPassenger(booking.getPassenger());
-            bookingRepository.save(bookingFromDb.get());
-            return true;
+
+            int numberOfBookedSeats = 0;
+            Collection<Booking> bookings = bookingFromDb.get().getFlight().getBookedSeats();
+            if (bookings.size() > 0)
+                for (Booking b : bookings)
+                    numberOfBookedSeats += b.getBookedSeatsNumber();
+
+                numberOfBookedSeats -= bookingFromDb.get().getBookedSeatsNumber();
+
+            bookingFromDb.get().setBookedSeatsNumber(
+                    bookingFromDb.get().getFlight().getMaxPassengersNumber() > numberOfBookedSeats
+                            + booking.getBookedSeatsNumber() ?
+                    booking.getBookedSeatsNumber() : bookingFromDb.get().getBookedSeatsNumber());
+            return bookingRepository.save(bookingFromDb.get());
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -57,6 +98,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public boolean isAbleToChange(long id) {
+        Optional<Booking> booking = bookingRepository.findById(id);
+        return booking.isPresent() && booking.get().getFlight().getDepartureDate().isAfter(LocalDateTime.now());
+    }
+
+    @Override
     public Collection<Booking> getUserBookingById(long userId) {
         return bookingRepository.findByPassengerId(userId);
     }
@@ -65,4 +112,13 @@ public class BookingServiceImpl implements BookingService {
     public Collection<Booking> getFlightBookingById(long flightId) {
         return bookingRepository.findByFlightId(flightId);
     }
+
+    @Override
+    public boolean hasAccess(String username, long itemId) {
+        Optional<User> user = userRepository.findByEmail(username);
+        Optional<Booking> booking = bookingRepository.findById(itemId);
+        return user.isPresent() && booking.isPresent() &&
+                (booking.get().getPassenger().getId().equals(user.get().getId()) || user.get().getRole() == Role.ADMIN);
+    }
+
 }

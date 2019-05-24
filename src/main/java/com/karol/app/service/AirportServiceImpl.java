@@ -22,25 +22,25 @@ public class AirportServiceImpl implements AirportService {
     }
 
     @Override
-    public Optional<Airport> getAirportById(long id) {
-        return airportRepository.findById(id);
+    public Airport getAirportById(long id) {
+        Optional<Airport> airport = airportRepository.findById(id);
+        return airport.isPresent() ? airport.get() : null;
     }
 
     @Override
-    public Optional<Airport> createAirport(Airport airport) {
-        return Optional.of(airportRepository.save(airport));
+    public Airport createAirport(Airport airport) {
+        return airportRepository.save(airport);
     }
 
     @Override
-    public boolean editAirportById(Long id, Airport airport) {
+    public Airport editAirportById(Long id, Airport airport) {
         Optional<Airport> airportFromDb = airportRepository.findById(id);
         if (airportFromDb.isPresent()) {
             airportFromDb.get().setCity(airport.getCity());
             airportFromDb.get().setCountry(airport.getCountry());
-            airportRepository.save(airportFromDb.get());
-            return true;
+            return airportRepository.save(airportFromDb.get());
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -52,6 +52,4 @@ public class AirportServiceImpl implements AirportService {
         }
         return false;
     }
-
-
 }

@@ -30,13 +30,18 @@ public class Flight {
     private Collection<Booking> bookedSeats;
 
     @ManyToOne(optional = false)
+    @JoinColumn(name = "starting_airport_id", referencedColumnName = "id")
+    private Airport startingAirport;
+
+    @ManyToOne(optional = false)
     @JoinColumn(name = "destination_airport_id", referencedColumnName = "id")
     private Airport destinationAirport;
 
-    public Flight(LocalDateTime departureDate, String airplaneModel, Integer maxPassengersNumber, Airport destinationAirport) {
+    public Flight(LocalDateTime departureDate, String airplaneModel, Integer maxPassengersNumber, Airport startingAirport, Airport destinationAirport) {
         this.departureDate = departureDate;
         this.airplaneModel = airplaneModel;
         this.maxPassengersNumber = maxPassengersNumber;
+        this.startingAirport = startingAirport;
         this.destinationAirport = destinationAirport;
     }
 }

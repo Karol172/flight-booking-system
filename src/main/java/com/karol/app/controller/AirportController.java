@@ -1,18 +1,16 @@
 package com.karol.app.controller;
 
 import com.karol.app.dto.AirportDto;
-import com.karol.app.dto.UserDto;
 import com.karol.app.model.Airport;
-import com.karol.app.model.User;
 import com.karol.app.service.AirportService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,6 +27,7 @@ public class AirportController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(airportService.getAllAirports().stream()
@@ -37,31 +36,37 @@ public class AirportController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity one (@PathVariable("id") long id) {
-        Optional<Airport> airport = airportService.getAirportById(id);
-        return airport.isPresent() ? ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(airport.get(),
-                AirportDto.class)) :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Airport airport = airportService.getAirportById(id);
+        if (airport == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(airport, AirportDto.class));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity create (@RequestBody @Valid AirportDto airportDto) {
-        return airportService.createAirport(modelMapper.map(airportDto, Airport.class)).isPresent() ?
-                ResponseEntity.status(HttpStatus.CREATED).build() :
-                ResponseEntity.status(HttpStatus.CONFLICT).build();
+        Airport responseAirport = airportService.createAirport(modelMapper.map(airportDto, Airport.class));
+        if (responseAirport.getId() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.CREATED).body(modelMapper.map(responseAirport, AirportDto.class));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity update (@PathVariable("id") long id, @RequestBody @Valid AirportDto airportDto) {
-        return airportService.editAirportById(id, modelMapper.map(airportDto, Airport.class)) ?
-                ResponseEntity.status(HttpStatus.OK).build() :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Airport responseAirport = airportService.editAirportById(id, modelMapper.map(airportDto, Airport.class));
+        if (responseAirport == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(responseAirport, AirportDto.class));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity remove (@PathVariable("id") long id) {
-        return airportService.removeAirportById(id) ?
-                ResponseEntity.status(HttpStatus.OK).build() :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (!airportService.removeAirportById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

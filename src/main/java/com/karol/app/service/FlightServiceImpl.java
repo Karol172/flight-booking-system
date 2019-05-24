@@ -1,10 +1,13 @@
 package com.karol.app.service;
 
 import com.karol.app.model.Airport;
+import com.karol.app.model.Booking;
 import com.karol.app.model.Flight;
+import com.karol.app.repository.AirportRepository;
 import com.karol.app.repository.FlightRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -13,8 +16,11 @@ public class FlightServiceImpl implements FlightService {
 
     private FlightRepository flightRepository;
 
-    public FlightServiceImpl (FlightRepository flightRepository) {
+    private AirportRepository airportRepository;
+
+    public FlightServiceImpl (FlightRepository flightRepository, AirportRepository airportRepository) {
         this.flightRepository = flightRepository;
+        this.airportRepository = airportRepository;
     }
 
     @Override
@@ -23,27 +29,41 @@ public class FlightServiceImpl implements FlightService {
     }
 
     @Override
-    public Optional<Flight> getFlightById(long id) {
-        return flightRepository.findById(id);
+    public Flight getFlightById(long id) {
+        Optional<Flight> flight = flightRepository.findById(id);
+        return flight.isPresent() ? flight.get() : null;
     }
 
     @Override
-    public Optional<Flight> createFlight(Flight flight) {
-        return Optional.of(flightRepository.save(flight));
+    public Flight createFlight(Flight flight) {
+        if (!airportsExist(flight) || flight.getDepartureDate().isBefore(LocalDateTime.now()))
+            return null;
+        return flightRepository.save(flight);
     }
 
     @Override
-    public boolean editFlightById(Long id, Flight flight) {
+    public Flight editFlightById(Long id, Flight flight) {
         Optional<Flight> flightFromDb = flightRepository.findById(id);
         if (flightFromDb.isPresent()) {
+            if (!airportsExist(flight) || flight.getDepartureDate().isBefore(LocalDateTime.now()))
+                return null;
+
             flightFromDb.get().setAirplaneModel(flight.getAirplaneModel());
-            flightFromDb.get().setDepartureDate(flight.getDepartureDate()); //TODO: Departure Date should be later than now
+            flightFromDb.get().setDepartureDate(flight.getDepartureDate());
             flightFromDb.get().setDestinationAirport(flight.getDestinationAirport());
-            flightFromDb.get().setMaxPassengersNumber(flight.getMaxPassengersNumber()); //TODO: Some limits
-            flightRepository.save(flightFromDb.get());
-            return true;
+
+            int numberOfBookedSeats = 0;
+            Collection<Booking> bookings = flightFromDb.get().getBookedSeats();
+            if (bookings.size() > 0)
+                for (Booking booking : bookings)
+                    numberOfBookedSeats += booking.getBookedSeatsNumber();
+
+            flightFromDb.get().setMaxPassengersNumber(flight.getMaxPassengersNumber() > numberOfBookedSeats ?
+                    flight.getMaxPassengersNumber() : numberOfBookedSeats);
+
+            return flightRepository.save(flightFromDb.get());
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -57,7 +77,23 @@ public class FlightServiceImpl implements FlightService {
     }
 
     @Override
-    public Collection<Flight> getAirportFlightsById(long airportId) {
+    public Collection<Flight> getStartedFlightsFromAirportById(long airportId) {
+        return flightRepository.findByStartingAirportId(airportId);
+    }
+
+    @Override
+    public Collection<Flight> getFinishedFlightsFromAirportById(long airportId) {
         return flightRepository.findByDestinationAirportId(airportId);
+    }
+
+    private boolean airportsExist (Flight flight) {
+        Optional<Airport> startingAirport = airportRepository.findById(flight.getStartingAirport().getId());
+        Optional<Airport> destinationAirport = airportRepository.findById(flight.getDestinationAirport().getId());
+
+        if (!startingAirport.isPresent() || !destinationAirport.isPresent())
+            return false;
+        flight.setStartingAirport(startingAirport.get());
+        flight.setDestinationAirport(destinationAirport.get());
+        return true;
     }
 }

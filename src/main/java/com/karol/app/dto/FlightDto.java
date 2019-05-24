@@ -23,5 +23,9 @@ public class FlightDto implements Serializable {
     private Integer maxPassengersNumber;
 
     @NotNull
+    private AirportDto startingAirport;
+
+    @NotNull
     private AirportDto destinationAirport;
+
 }

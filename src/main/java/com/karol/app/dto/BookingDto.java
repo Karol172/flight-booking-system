@@ -12,14 +12,12 @@ public class BookingDto implements Serializable {
 
     private Long id;
 
-    @NotNull
     private LocalDateTime bookingDate;
 
     @NotNull
-    @Min(0)
+    @Min(1)
     private Integer bookedSeatsNumber;
 
-    @NotNull
     private UserDto passenger;
 
     @NotNull

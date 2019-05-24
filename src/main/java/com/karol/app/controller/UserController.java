@@ -6,10 +6,13 @@ import com.karol.app.service.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
-import java.util.Collection;
+import java.security.Principal;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/user")
@@ -19,43 +22,60 @@ public class UserController {
 
     private ModelMapper modelMapper;
 
-    public UserController (UserService userService, ModelMapper modelMapper) {
+    public UserController(UserService userService, ModelMapper modelMapper) {
         this.userService = userService;
         this.modelMapper = modelMapper;
     }
 
     @GetMapping
-    public Collection<User> all () {
-        return userService.getAllUsers();
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity all() {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(userService.getAllUsers().stream().peek(user -> user.setPassword(null))
+                        .map(user -> modelMapper.map(user, UserDto.class))
+                        .collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> index (@PathVariable("id") long id) {
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity one(@PathVariable("id") long id, Principal principal) {
+        if (!userService.hasAccess(principal.getName(), id))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         User user = userService.getUserById(id);
-        if (user != null) {
-            UserDto userDto = modelMapper.map(user, UserDto.class);
-            userDto.setPassword(null);
-            return ResponseEntity.status(HttpStatus.OK).body(userDto);
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (user == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        user.setPassword(null);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(user, UserDto.class));
     }
 
     @PostMapping
-    public Long create (@RequestBody @Valid UserDto userDto) {
-        User user = modelMapper.map(userDto, User.class);
-        return userService.createUser(user);
+    public ResponseEntity create(@RequestBody @Valid UserDto userDto) {
+        User user = userService.createUser(modelMapper.map(userDto, User.class));
+        if (user == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        user.setPassword(null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(modelMapper.map(user, UserDto.class));
     }
 
-/*    @PutMapping("/{id}")
-    public boolean edit (@PathVariable("id") long id, @RequestBody @Valid UserDto user) {
-        return userService.editUserById(id, user);
-    }*/
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity update(@PathVariable("id") long id, @RequestBody @Valid UserDto userDto, Principal principal) {
+        if (!userService.hasAccess(principal.getName(), id))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        User user = userService.editUserById(id, modelMapper.map(userDto, User.class), principal.getName());
+        if (user == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        user.setPassword(null);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(user, UserDto.class));
+    }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity remove (@PathVariable("id") long id){
-        return userService.removeUserById(id) ?
-            ResponseEntity.status(HttpStatus.OK).build() : ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-
-
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity remove(@PathVariable("id") long id) {
+        if (userService.isAdmin(id))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        if (!userService.removeUserById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return  ResponseEntity.status(HttpStatus.OK).build();
     }
 }

@@ -10,9 +10,13 @@ public interface UserService {
 
     User getUserById (long id);
 
-    long createUser (User user);
+    User createUser (User user);
 
-    boolean editUserById (Long id, User user);
+    User editUserById (long id, User user, String principalName);
 
     boolean removeUserById(long id);
+
+    boolean hasAccess (String username, long itemId);
+
+    boolean isAdmin (long id);
 }

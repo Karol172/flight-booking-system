@@ -6,10 +6,11 @@ import com.karol.app.service.FlightService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -26,43 +27,60 @@ public class FlightController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK).body(flightService.getAllFlights().stream()
                 .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity one (@PathVariable("id") long id) {
-        Optional<Flight> flight = flightService.getFlightById(id);
-        return flight.isPresent() ? ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(flight.get(), FlightDto.class)) :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Flight flight = flightService.getFlightById(id);
+        if (flight == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(flight, FlightDto.class));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity create (@RequestBody @Valid FlightDto flightDto) {
-        return flightService.createFlight(modelMapper.map(flightDto, Flight.class)).isPresent() ?
-                ResponseEntity.status(HttpStatus.CREATED).build() :
-                ResponseEntity.status(HttpStatus.CONFLICT).build();
+        Flight flight = flightService.createFlight(modelMapper.map(flightDto, Flight.class));
+        if (flight == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.CREATED).body(modelMapper.map(flight, FlightDto.class));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity update (@PathVariable("id") long id, @RequestBody @Valid FlightDto flightDto) {
-        return flightService.editFlightById(id, modelMapper.map(flightDto, Flight.class)) ?
-                ResponseEntity.status(HttpStatus.OK).build() :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Flight flight = flightService.editFlightById(id, modelMapper.map(flightDto, Flight.class));
+        if (flight == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(flight, FlightDto.class));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity remove (@PathVariable("id") long id) {
-        return flightService.removeFlightById(id) ?
-                ResponseEntity.status(HttpStatus.OK).build() :
-                ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (!flightService.removeFlightById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+/*    @GetMapping("/destination/{airportId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity airportFlights(@PathVariable("airportId") long airportId) {
+        return null;*//*ResponseEntity.status(HttpStatus.OK).body(flightService.getAirportFlightsById(airportId).stream()
+                .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));*//*
     }
 
     @GetMapping("/destination/{airportId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity airportFlights(@PathVariable("airportId") long airportId) {
-        return ResponseEntity.status(HttpStatus.OK).body(flightService.getAirportFlightsById(airportId).stream()
-                .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));
-    }
+        return null;*//*ResponseEntity.status(HttpStatus.OK).body(flightService.getAirportFlightsById(airportId).stream()
+                .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));*//*
+    }*/
 
 }

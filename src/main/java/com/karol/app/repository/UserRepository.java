@@ -4,11 +4,15 @@ import com.karol.app.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    User findFirstByLastName (String lastName);
+    Optional<User> findFirstByLastName (String lastName);
 
-    Boolean existsByMail (String mail);
+    boolean existsByEmail (String email);
+
+    Optional<User> findByEmail (String email);
+
 }
-
