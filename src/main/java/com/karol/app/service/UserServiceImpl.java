@@ -3,9 +3,13 @@ package com.karol.app.service;
 import com.karol.app.model.Role;
 import com.karol.app.model.User;
 import com.karol.app.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -27,6 +31,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Page<User> getAllUsersSortedBy(String field, int page, int numberRecord) {
+        if (!Arrays.asList("id", "firstName", "lastName", "email", "role").contains(field))
+            return null;
+        return userRepository.findAll(PageRequest.of(page, numberRecord,
+                Sort.by(Sort.Direction.ASC, field)));
+    }
+
+    @Override
     public User getUserById(long id) {
         Optional<User> user = userRepository.findById(id);
         return user.isPresent() ? user.get() : null;
@@ -36,6 +48,7 @@ public class UserServiceImpl implements UserService {
     public User createUser(User user) {
         user.setRole(Role.USER);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setId(null);
         return !userRepository.existsByEmail(user.getEmail()) ? userRepository.save(user) : null;
     }
 

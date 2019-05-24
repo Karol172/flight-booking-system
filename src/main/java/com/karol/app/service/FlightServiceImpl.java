@@ -5,9 +5,13 @@ import com.karol.app.model.Booking;
 import com.karol.app.model.Flight;
 import com.karol.app.repository.AirportRepository;
 import com.karol.app.repository.FlightRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -29,6 +33,14 @@ public class FlightServiceImpl implements FlightService {
     }
 
     @Override
+    public Page<Flight> getAllFlightsSortedBy(String field, int page, int records) {
+        if (!Arrays.asList("id", "departureDate", "airplaneModel", "maxPassengersNumber").contains(field))
+            return null;
+        return flightRepository.findAll(PageRequest.of(page, records,
+                Sort.by(Sort.Direction.ASC, field)));
+    }
+
+    @Override
     public Flight getFlightById(long id) {
         Optional<Flight> flight = flightRepository.findById(id);
         return flight.isPresent() ? flight.get() : null;
@@ -38,6 +50,7 @@ public class FlightServiceImpl implements FlightService {
     public Flight createFlight(Flight flight) {
         if (!airportsExist(flight) || flight.getDepartureDate().isBefore(LocalDateTime.now()))
             return null;
+        flight.setId(null);
         return flightRepository.save(flight);
     }
 

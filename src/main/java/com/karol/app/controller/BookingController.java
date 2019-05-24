@@ -4,6 +4,7 @@ import com.karol.app.dto.BookingDto;
 import com.karol.app.model.Booking;
 import com.karol.app.service.BookingService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +34,41 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.OK).body(bookingService.getAllBookings().stream()
                 .peek(booking -> booking.getPassenger().setPassword(null))
                 .map(booking -> modelMapper.map(booking, BookingDto.class)).collect(Collectors.toList()));
+    }
+
+    @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
+                                           @PathVariable("records") int records) {
+        if (page < 0 || records < 1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+
+        Page<Booking> bookingPage = bookingService.getAllBookingsSortedBy(field, page, records);
+
+        if (bookingPage == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(bookingPage.stream().peek(booking -> booking.getPassenger().setPassword(null))
+                        .map(airport -> modelMapper.map(airport, BookingDto.class))
+                        .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/passenger/{passengerId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity bookingsFilteredByPassenger(@PathVariable("passengerId") long passengerId, Principal principal) {
+        if (!bookingService.hasAccessToUserWithId(principal.getName(), passengerId))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        return ResponseEntity.status(HttpStatus.OK).body(bookingService.getBookingsOfPassengerById(passengerId)
+                .stream().peek(flight -> flight.getPassenger().setPassword(null))
+                .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
+    }
+
+    @GetMapping("/flight/{flightId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity bookingsFilteredByFlight (@PathVariable("flightId") long flightId) {
+        return ResponseEntity.status(HttpStatus.OK).body(bookingService.getBookingsOfFlightById(flightId)
+                .stream().peek(flight -> flight.getPassenger().setPassword(null))
+                .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
@@ -88,15 +124,4 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-/*    @GetMapping("/passenger/{passengerId}")
-    public ResponseEntity passengerBooking(@PathVariable("passengerId") long passengerId) {
-        return ResponseEntity.status(HttpStatus.OK).body(bookingService.getUserBookingById(passengerId).stream()
-                .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
-    }
-
-    @GetMapping("/flight/{flightId}")
-    public ResponseEntity flightBooking(@PathVariable("flightId") long flightId) {
-        return ResponseEntity.status(HttpStatus.OK).body(bookingService.getFlightBookingById(flightId).stream()
-                .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
-    }*/
 }

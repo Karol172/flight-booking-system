@@ -1,12 +1,15 @@
 package com.karol.app.service;
 
 import com.karol.app.model.Booking;
+import org.springframework.data.domain.Page;
 
 import java.util.Collection;
 
 public interface BookingService {
 
     Collection<Booking> getAllBookings();
+
+    Page<Booking> getAllBookingsSortedBy(String field, int page, int records);
 
     Booking getBookingById(long id);
 
@@ -18,10 +21,12 @@ public interface BookingService {
 
     boolean isAbleToChange(long id);
 
-    Collection<Booking> getUserBookingById(long userId);
+    Collection<Booking> getBookingsOfPassengerById(long userId);
 
-    Collection<Booking> getFlightBookingById(long flightId);
+    Collection<Booking> getBookingsOfFlightById(long flightId);
 
     boolean hasAccess(String username, long itemId);
+
+    boolean hasAccessToUserWithId(String username, long itemId);
 
 }

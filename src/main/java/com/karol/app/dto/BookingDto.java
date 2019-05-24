@@ -1,5 +1,6 @@
 package com.karol.app.dto;
 
+import com.karol.app.validator.NotNullId;
 import lombok.Data;
 
 import javax.validation.constraints.Min;
@@ -21,5 +22,6 @@ public class BookingDto implements Serializable {
     private UserDto passenger;
 
     @NotNull
+    @NotNullId
     private FlightDto flight;
 }

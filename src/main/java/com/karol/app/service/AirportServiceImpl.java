@@ -2,8 +2,12 @@ package com.karol.app.service;
 
 import com.karol.app.model.Airport;
 import com.karol.app.repository.AirportRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -21,6 +25,13 @@ public class AirportServiceImpl implements AirportService {
         return airportRepository.findAll();
     }
 
+    public Page<Airport> getAllAirportsSortedBy(String field, int page, int numberRecord) {
+        if (!Arrays.asList("id", "city", "country").contains(field))
+            return null;
+        return airportRepository.findAll(PageRequest.of(page, numberRecord,
+                Sort.by(Sort.Direction.ASC, field)));
+    }
+
     @Override
     public Airport getAirportById(long id) {
         Optional<Airport> airport = airportRepository.findById(id);
@@ -29,6 +40,7 @@ public class AirportServiceImpl implements AirportService {
 
     @Override
     public Airport createAirport(Airport airport) {
+        airport.setId(null);
         return airportRepository.save(airport);
     }
 

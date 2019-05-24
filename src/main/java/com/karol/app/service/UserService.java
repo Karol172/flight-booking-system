@@ -1,12 +1,15 @@
 package com.karol.app.service;
 
 import com.karol.app.model.User;
+import org.springframework.data.domain.Page;
 
 import java.util.Collection;
 
 public interface UserService {
 
     Collection<User> getAllUsers ();
+
+    Page<User> getAllUsersSortedBy(String field, int page, int numberRecord);
 
     User getUserById (long id);
 

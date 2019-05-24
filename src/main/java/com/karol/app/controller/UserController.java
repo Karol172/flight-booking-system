@@ -1,9 +1,12 @@
 package com.karol.app.controller;
 
+import com.karol.app.dto.AirportDto;
 import com.karol.app.dto.UserDto;
+import com.karol.app.model.Airport;
 import com.karol.app.model.User;
 import com.karol.app.service.UserService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +36,22 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(userService.getAllUsers().stream().peek(user -> user.setPassword(null))
                         .map(user -> modelMapper.map(user, UserDto.class))
+                        .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
+                                           @PathVariable("records") int records) {
+        if (page < 0 || records < 1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        Page<User> userPage= userService.getAllUsersSortedBy(field, page, records);
+
+        if (userPage == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(userPage.stream().peek(user -> user.setPassword(null))
+                        .map(airport -> modelMapper.map(airport, UserDto.class))
                         .collect(Collectors.toList()));
     }
 

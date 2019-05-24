@@ -4,6 +4,7 @@ import com.karol.app.dto.AirportDto;
 import com.karol.app.model.Airport;
 import com.karol.app.service.AirportService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,6 +32,22 @@ public class AirportController {
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(airportService.getAllAirports().stream()
+                        .map(airport -> modelMapper.map(airport, AirportDto.class))
+                        .collect(Collectors.toList()));
+    }
+
+    @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
+                                           @PathVariable("records") int records) {
+        if (page < 0 || records < 1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        Page<Airport> airportPage= airportService.getAllAirportsSortedBy(field, page, records);
+
+        if (airportPage == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(airportPage.stream()
                         .map(airport -> modelMapper.map(airport, AirportDto.class))
                         .collect(Collectors.toList()));
     }

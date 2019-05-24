@@ -7,9 +7,13 @@ import com.karol.app.model.User;
 import com.karol.app.repository.BookingRepository;
 import com.karol.app.repository.FlightRepository;
 import com.karol.app.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -32,6 +36,14 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public Collection<Booking> getAllBookings() {
         return bookingRepository.findAll();
+    }
+
+    @Override
+    public Page<Booking> getAllBookingsSortedBy(String field, int page, int records) {
+        if (!Arrays.asList("id", "bookingDate", "bookedSeatsNumber").contains(field))
+            return null;
+        return bookingRepository.findAll(PageRequest.of(page, records,
+                Sort.by(Sort.Direction.ASC, field)));
     }
 
     @Override
@@ -61,7 +73,7 @@ public class BookingServiceImpl implements BookingService {
 
         if (numberOfBookedSeats + booking.getBookedSeatsNumber() > flight.get().getMaxPassengersNumber())
             return null;
-
+        booking.setId(null);
         return bookingRepository.save(booking);
     }
 
@@ -104,21 +116,28 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public Collection<Booking> getUserBookingById(long userId) {
-        return bookingRepository.findByPassengerId(userId);
-    }
-
-    @Override
-    public Collection<Booking> getFlightBookingById(long flightId) {
-        return bookingRepository.findByFlightId(flightId);
-    }
-
-    @Override
     public boolean hasAccess(String username, long itemId) {
         Optional<User> user = userRepository.findByEmail(username);
         Optional<Booking> booking = bookingRepository.findById(itemId);
         return user.isPresent() && booking.isPresent() &&
                 (booking.get().getPassenger().getId().equals(user.get().getId()) || user.get().getRole() == Role.ADMIN);
     }
+
+    @Override
+    public boolean hasAccessToUserWithId(String username, long itemId) {
+        Optional<User> user = userRepository.findByEmail(username);
+        return user.isPresent() && (user.get().getId() == itemId || user.get().getRole() == Role.ADMIN);
+    }
+
+    @Override
+    public Collection<Booking> getBookingsOfPassengerById(long userId) {
+        return bookingRepository.findByPassengerId(userId);
+    }
+
+    @Override
+    public Collection<Booking> getBookingsOfFlightById(long flightId) {
+        return bookingRepository.findByFlightId(flightId);
+    }
+
 
 }
