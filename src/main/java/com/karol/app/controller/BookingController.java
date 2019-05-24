@@ -3,6 +3,8 @@ package com.karol.app.controller;
 import com.karol.app.dto.BookingDto;
 import com.karol.app.model.Booking;
 import com.karol.app.service.BookingService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,7 @@ public class BookingController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @ApiOperation("Get all bookings")
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK).body(bookingService.getAllBookings().stream()
                 .peek(booking -> booking.getPassenger().setPassword(null))
@@ -38,8 +41,10 @@ public class BookingController {
 
     @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
-                                           @PathVariable("records") int records) {
+    @ApiOperation("Get all bookings, sort and divide into certain number of pages")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") @ApiParam("Name of the sorting field") String field,
+                                           @PathVariable("page") @ApiParam("Page number") int page,
+                                           @PathVariable("records") @ApiParam("Number of records on a single page") int records) {
         if (page < 0 || records < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
@@ -55,9 +60,11 @@ public class BookingController {
 
     @GetMapping("/passenger/{passengerId}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity bookingsFilteredByPassenger(@PathVariable("passengerId") long passengerId, Principal principal) {
+    @ApiOperation("Get bookings belongs to passenger")
+    public ResponseEntity bookingsFilteredByPassenger(@PathVariable("passengerId") @ApiParam("Id of passenger") long passengerId,
+                                                      Principal principal) {
         if (!bookingService.hasAccessToUserWithId(principal.getName(), passengerId))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         return ResponseEntity.status(HttpStatus.OK).body(bookingService.getBookingsOfPassengerById(passengerId)
                 .stream().peek(flight -> flight.getPassenger().setPassword(null))
                 .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
@@ -65,7 +72,8 @@ public class BookingController {
 
     @GetMapping("/flight/{flightId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity bookingsFilteredByFlight (@PathVariable("flightId") long flightId) {
+    @ApiOperation("Get bookings to flight")
+    public ResponseEntity bookingsFilteredByFlight (@PathVariable("flightId") @ApiParam("Id of flight") long flightId) {
         return ResponseEntity.status(HttpStatus.OK).body(bookingService.getBookingsOfFlightById(flightId)
                 .stream().peek(flight -> flight.getPassenger().setPassword(null))
                 .map(flight -> modelMapper.map(flight, BookingDto.class)).collect(Collectors.toList()));
@@ -73,9 +81,10 @@ public class BookingController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity one (@PathVariable("id") long id, Principal principal) {
+    @ApiOperation("Get booking")
+    public ResponseEntity one (@PathVariable("id") @ApiParam("Id of booking") long id, Principal principal) {
         if (!bookingService.hasAccess(principal.getName(), id))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         Booking booking = bookingService.getBookingById(id);
         if (booking == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -85,7 +94,8 @@ public class BookingController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity create (@RequestBody @Valid BookingDto bookingDto, Principal principal) {
+    @ApiOperation("Create new booking")
+    public ResponseEntity create (@RequestBody @Valid @ApiParam("Booking") BookingDto bookingDto, Principal principal) {
         Booking booking = bookingService.createBooking(modelMapper.map(bookingDto, Booking.class), principal.getName());
         if (booking == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -95,25 +105,29 @@ public class BookingController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity update (@PathVariable("id") long id, @RequestBody @Valid BookingDto bookingDto, Principal principal) {
+    @ApiOperation("Update booking")
+    public ResponseEntity update (@PathVariable("id") @ApiParam("Id of booking") long id,
+                                  @RequestBody @Valid @ApiParam("Booking") BookingDto bookingDto,
+                                  Principal principal) {
         if (!bookingService.hasAccess(principal.getName(), id))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
         if (!bookingService.isAbleToChange(id))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
         Booking booking = bookingService.editBookingById(id, modelMapper.map(bookingDto, Booking.class));
         if (booking == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         booking.getPassenger().setPassword(null);
         return ResponseEntity.status(HttpStatus.OK).body(modelMapper.map(booking, BookingDto.class));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity remove (@PathVariable("id") long id, Principal principal) {
+    @ApiOperation("Delete booking")
+    public ResponseEntity remove (@PathVariable("id") @ApiParam("Id of booking") long id, Principal principal) {
         if (!bookingService.hasAccess(principal.getName(), id))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
         if (!bookingService.isAbleToChange(id))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

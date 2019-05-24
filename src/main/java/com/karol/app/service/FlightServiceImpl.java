@@ -71,9 +71,10 @@ public class FlightServiceImpl implements FlightService {
                 for (Booking booking : bookings)
                     numberOfBookedSeats += booking.getBookedSeatsNumber();
 
-            flightFromDb.get().setMaxPassengersNumber(flight.getMaxPassengersNumber() > numberOfBookedSeats ?
-                    flight.getMaxPassengersNumber() : numberOfBookedSeats);
+            if (flight.getMaxPassengersNumber() < numberOfBookedSeats)
+                return null;
 
+            flightFromDb.get().setMaxPassengersNumber(flight.getMaxPassengersNumber());
             return flightRepository.save(flightFromDb.get());
         }
         return null;

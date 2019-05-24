@@ -9,8 +9,8 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
 public class NotNullIdValidator implements ConstraintValidator<NotNullId, Object> {
-   public void initialize(NotNullId constraint) {
-   }
+
+   public void initialize(NotNullId constraint) { }
 
    public boolean isValid(Object obj, ConstraintValidatorContext context) {
       if (obj == null)
@@ -25,4 +25,5 @@ public class NotNullIdValidator implements ConstraintValidator<NotNullId, Object
          return ((UserDto) obj).getId() != null;
       return false;
    }
+
 }

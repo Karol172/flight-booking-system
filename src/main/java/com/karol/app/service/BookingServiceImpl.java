@@ -58,7 +58,8 @@ public class BookingServiceImpl implements BookingService {
         Optional<User> passenger = userRepository.findByEmail(username);
         Optional<Flight> flight = flightRepository.findById(booking.getFlight().getId());
 
-        if (!passenger.isPresent() || !flight.isPresent())
+        if (!passenger.isPresent() || !flight.isPresent()
+                || flight.get().getDepartureDate().isBefore(LocalDateTime.now()))
             return null;
 
         booking.setPassenger(passenger.get());
@@ -87,13 +88,11 @@ public class BookingServiceImpl implements BookingService {
             if (bookings.size() > 0)
                 for (Booking b : bookings)
                     numberOfBookedSeats += b.getBookedSeatsNumber();
+            numberOfBookedSeats -= bookingFromDb.get().getBookedSeatsNumber();
 
-                numberOfBookedSeats -= bookingFromDb.get().getBookedSeatsNumber();
-
-            bookingFromDb.get().setBookedSeatsNumber(
-                    bookingFromDb.get().getFlight().getMaxPassengersNumber() > numberOfBookedSeats
-                            + booking.getBookedSeatsNumber() ?
-                    booking.getBookedSeatsNumber() : bookingFromDb.get().getBookedSeatsNumber());
+            if (bookingFromDb.get().getFlight().getMaxPassengersNumber() < numberOfBookedSeats + booking.getBookedSeatsNumber())
+                return null;
+            bookingFromDb.get().setBookedSeatsNumber(booking.getBookedSeatsNumber());
             return bookingRepository.save(bookingFromDb.get());
         }
         return null;
@@ -138,6 +137,5 @@ public class BookingServiceImpl implements BookingService {
     public Collection<Booking> getBookingsOfFlightById(long flightId) {
         return bookingRepository.findByFlightId(flightId);
     }
-
 
 }

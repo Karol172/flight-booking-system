@@ -89,4 +89,5 @@ public class UserServiceImpl implements UserService {
         Optional<User> user = userRepository.findById(id);
         return user.isPresent() && user.get().getRole() == Role.ADMIN;
     }
+
 }

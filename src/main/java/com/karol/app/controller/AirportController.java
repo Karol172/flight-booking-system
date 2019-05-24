@@ -3,6 +3,8 @@ package com.karol.app.controller;
 import com.karol.app.dto.AirportDto;
 import com.karol.app.model.Airport;
 import com.karol.app.service.AirportService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,7 @@ public class AirportController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @ApiOperation("Get all airports")
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(airportService.getAllAirports().stream()
@@ -38,8 +41,10 @@ public class AirportController {
 
     @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
-                                           @PathVariable("records") int records) {
+    @ApiOperation("Get all airports, sort and divide into certain number of pages")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") @ApiParam("Name of the sorting field") String field,
+                                           @PathVariable("page") @ApiParam("Page number") int page,
+                                           @PathVariable("records") @ApiParam("Number of records on a single page") int records) {
         if (page < 0 || records < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Page<Airport> airportPage= airportService.getAllAirportsSortedBy(field, page, records);
@@ -54,7 +59,8 @@ public class AirportController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity one (@PathVariable("id") long id) {
+    @ApiOperation("Get airport")
+    public ResponseEntity one (@PathVariable("id") @ApiParam("Id of airport") long id) {
         Airport airport = airportService.getAirportById(id);
         if (airport == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -63,7 +69,8 @@ public class AirportController {
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity create (@RequestBody @Valid AirportDto airportDto) {
+    @ApiOperation("Create new airport")
+    public ResponseEntity create (@RequestBody @Valid @ApiParam("Airport") AirportDto airportDto) {
         Airport responseAirport = airportService.createAirport(modelMapper.map(airportDto, Airport.class));
         if (responseAirport.getId() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -72,7 +79,9 @@ public class AirportController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity update (@PathVariable("id") long id, @RequestBody @Valid AirportDto airportDto) {
+    @ApiOperation("Update airport")
+    public ResponseEntity update (@PathVariable("id") @ApiParam("Id of updating airport") long id,
+                                  @RequestBody @Valid @ApiParam("Airport") AirportDto airportDto) {
         Airport responseAirport = airportService.editAirportById(id, modelMapper.map(airportDto, Airport.class));
         if (responseAirport == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -81,7 +90,8 @@ public class AirportController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity remove (@PathVariable("id") long id) {
+    @ApiOperation("Delete airport")
+    public ResponseEntity remove (@PathVariable("id") @ApiParam("Id of removing airport") long id) {
         if (!airportService.removeAirportById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.status(HttpStatus.OK).build();

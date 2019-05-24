@@ -1,10 +1,10 @@
 package com.karol.app.controller;
 
-import com.karol.app.dto.AirportDto;
 import com.karol.app.dto.UserDto;
-import com.karol.app.model.Airport;
 import com.karol.app.model.User;
 import com.karol.app.service.UserService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -32,6 +32,7 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @ApiOperation("Get all users")
     public ResponseEntity all() {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(userService.getAllUsers().stream().peek(user -> user.setPassword(null))
@@ -41,8 +42,10 @@ public class UserController {
 
     @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
-                                           @PathVariable("records") int records) {
+    @ApiOperation("Get all users, sort and divide into certain number of pages")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") @ApiParam("Name of the sorting field") String field,
+                                           @PathVariable("page") @ApiParam("Page number") int page,
+                                           @PathVariable("records") @ApiParam("Number of records on a single page") int records) {
         if (page < 0 || records < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Page<User> userPage= userService.getAllUsersSortedBy(field, page, records);
@@ -57,9 +60,11 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity one(@PathVariable("id") long id, Principal principal) {
+    @ApiOperation("Get user")
+    public ResponseEntity one(@PathVariable("id") @ApiParam("Id of user") long id, Principal principal) {
         if (!userService.hasAccess(principal.getName(), id))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         User user = userService.getUserById(id);
         if (user == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -68,7 +73,8 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity create(@RequestBody @Valid UserDto userDto) {
+    @ApiOperation("Create new user")
+    public ResponseEntity create(@RequestBody @Valid @ApiParam("User") UserDto userDto) {
         User user = userService.createUser(modelMapper.map(userDto, User.class));
         if (user == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -78,9 +84,12 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity update(@PathVariable("id") long id, @RequestBody @Valid UserDto userDto, Principal principal) {
+    @ApiOperation("Update user")
+    public ResponseEntity update(@PathVariable("id") @ApiParam("Id of user") long id,
+                                 @RequestBody @Valid @ApiParam("User") UserDto userDto, Principal principal) {
         if (!userService.hasAccess(principal.getName(), id))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         User user = userService.editUserById(id, modelMapper.map(userDto, User.class), principal.getName());
         if (user == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -90,7 +99,8 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity remove(@PathVariable("id") long id) {
+    @ApiOperation("Delete user")
+    public ResponseEntity remove(@PathVariable("id") @ApiParam("Id of user") long id) {
         if (userService.isAdmin(id))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         if (!userService.removeUserById(id))

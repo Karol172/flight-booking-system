@@ -24,7 +24,7 @@ public class FlightDto implements Serializable {
     private String airplaneModel;
 
     @NotNull
-    @Min(0)
+    @Min(1)
     private Integer maxPassengersNumber;
 
     @NotNull

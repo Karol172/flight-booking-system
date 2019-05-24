@@ -1,10 +1,10 @@
 package com.karol.app.controller;
 
-import com.karol.app.dto.AirportDto;
 import com.karol.app.dto.FlightDto;
-import com.karol.app.model.Airport;
 import com.karol.app.model.Flight;
 import com.karol.app.service.FlightService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -31,6 +31,7 @@ public class FlightController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @ApiOperation("Get all flights")
     public ResponseEntity all () {
         return ResponseEntity.status(HttpStatus.OK).body(flightService.getAllFlights().stream()
                 .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));
@@ -38,8 +39,10 @@ public class FlightController {
 
     @GetMapping("/sort/{sortedBy}/page/{page}/{records}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") String field, @PathVariable("page") int page,
-                                           @PathVariable("records") int records) {
+    @ApiOperation("Get all flights, sort and divide into certain number of pages")
+    public ResponseEntity sortAndPaginate (@PathVariable("sortedBy") @ApiParam("Name of the sorting field") String field,
+                                           @PathVariable("page") @ApiParam("Page number") int page,
+                                           @PathVariable("records") @ApiParam("Number of records on a single page") int records) {
         if (page < 0 || records < 1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
@@ -55,21 +58,24 @@ public class FlightController {
 
     @GetMapping("/start/{airportId}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity flightsFilteredByStartingAirport(@PathVariable("airportId") long airportId) {
+    @ApiOperation("Get flights with starting airport")
+    public ResponseEntity flightsFilteredByStartingAirport(@PathVariable("airportId") @ApiParam("Id of airport") long airportId) {
         return ResponseEntity.status(HttpStatus.OK).body(flightService.getStartedFlightsFromAirportById(airportId).stream()
                 .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));
     }
 
     @GetMapping("/destination/{airportId}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity flightsFilteredByDestinationAirport(@PathVariable("airportId") long airportId) {
+    @ApiOperation("Get flights with destination airport")
+    public ResponseEntity flightsFilteredByDestinationAirport(@PathVariable("airportId") @ApiParam("Id of airport") long airportId) {
         return ResponseEntity.status(HttpStatus.OK).body(flightService.getFinishedFlightsFromAirportById(airportId).stream()
                 .map(flight -> modelMapper.map(flight, FlightDto.class)).collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity one (@PathVariable("id") long id) {
+    @ApiOperation("Get flight")
+    public ResponseEntity one (@PathVariable("id") @ApiParam("Id of flight") long id) {
         Flight flight = flightService.getFlightById(id);
         if (flight == null)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -79,7 +85,8 @@ public class FlightController {
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity create (@RequestBody @Valid FlightDto flightDto) {
+    @ApiOperation("Create new flight")
+    public ResponseEntity create (@RequestBody @Valid @ApiParam("Flight") FlightDto flightDto) {
         Flight flight = flightService.createFlight(modelMapper.map(flightDto, Flight.class));
         if (flight == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -88,7 +95,9 @@ public class FlightController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity update (@PathVariable("id") long id, @RequestBody @Valid FlightDto flightDto) {
+    @ApiOperation("Update flight")
+    public ResponseEntity update (@PathVariable("id") @ApiParam("Id of user") long id,
+                                  @RequestBody @Valid @ApiParam("Flight") FlightDto flightDto) {
         Flight flight = flightService.editFlightById(id, modelMapper.map(flightDto, Flight.class));
         if (flight == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -97,7 +106,8 @@ public class FlightController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity remove (@PathVariable("id") long id) {
+    @ApiOperation("Delete flight")
+    public ResponseEntity remove (@PathVariable("id") @ApiParam("Id of user") long id) {
         if (!flightService.removeFlightById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return ResponseEntity.status(HttpStatus.OK).build();
