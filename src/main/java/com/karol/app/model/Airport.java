@@ -23,10 +23,10 @@ public class Airport implements Serializable {
     @Column(nullable = false)
     private String country;
 
-    @OneToMany(mappedBy = "startingAirport", orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "startingAirport", orphanRemoval = true)
     private Collection<Flight> starts;
 
-    @OneToMany(mappedBy = "destinationAirport", orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "destinationAirport", orphanRemoval = true)
     private Collection<Flight> arrivals;
 
     public Airport(String city, String country) {
