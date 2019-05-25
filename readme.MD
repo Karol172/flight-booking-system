@@ -8,7 +8,8 @@ It can be used by just registered users. In app are two group of users: ADMIN an
 ## Running instructions
 1. Clone repository or download and extract ZIP
 2. `cd` into main directory of repository
-3. Run `./mvnw spring-boot:run` if running on Unix platform, or `./mvnw.cmd spring-boot:run` for Windows OS
+3. Run `./mvnw spring-boot:run` if running on Unix platform, or `mvnw.cmd spring-boot:run` for Windows OS
+4. Now app is working at port 8080
 
 You can use existing users. In database are three users:
 
