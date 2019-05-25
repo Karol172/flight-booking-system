@@ -110,4 +110,5 @@ public class FlightServiceImpl implements FlightService {
         flight.setDestinationAirport(destinationAirport.get());
         return true;
     }
+
 }

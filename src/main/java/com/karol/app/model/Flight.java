@@ -4,13 +4,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
 @Data
 @NoArgsConstructor
 @Entity
-public class Flight {
+public class Flight implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,4 +45,5 @@ public class Flight {
         this.startingAirport = startingAirport;
         this.destinationAirport = destinationAirport;
     }
+
 }

@@ -96,6 +96,7 @@
             <artifactId>swagger-annotations</artifactId>
             <version>1.5.21</version>
         </dependency>
+
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-models</artifactId>
@@ -112,6 +113,5 @@
             </plugin>
         </plugins>
     </build>
-
 
 </project>

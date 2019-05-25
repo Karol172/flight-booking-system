@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = NotNullIdValidator.class)
 public @interface NotNullId {
+
     String message() default "Field 'id' of this object can't be null";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};

@@ -32,4 +32,5 @@ public class Booking implements Serializable {
     @ManyToOne(optional = false)
     @JoinColumn(name = "flight_id", referencedColumnName = "id")
     private Flight flight;
+
 }

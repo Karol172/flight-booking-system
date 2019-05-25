@@ -22,4 +22,5 @@ public interface UserService {
     boolean hasAccess (String username, long itemId);
 
     boolean isAdmin (long id);
+
 }
